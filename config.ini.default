@@ -1,0 +1,12 @@
+[telegram]
+; Obtain api_id and api_hash them from telegram
+api_id =
+api_hash =
+; Bot token for poster
+bot_token =
+; Set bot post channel
+channel =
+; Authorization password
+password =
+; Predefined Owners
+owners = []
