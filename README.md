@@ -2,7 +2,7 @@
 
 ## Commit history
 
-Check from KunoiSayami/telegram-ingress-code-master@d95533547d89c7314471ff94e91365b6f0ca1fb1
+Check from [KunoiSayami/telegram-ingress-code-master@d95533547d89c7314471ff94e91365b6f0ca1fb1](https://github.com/KunoiSayami/telegram-ingress-code-master/commit/d95533547d89c7314471ff94e91365b6f0ca1fb1)
 
 ## License
 

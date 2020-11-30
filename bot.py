@@ -108,6 +108,7 @@ class Tracker:
         count = 0
         error_codes = []
         duplicate_codes = []
+        status_message = None
         for passcode in msg.text.splitlines(False):
             if passcode == '' or passcode.startswith('#'):
                 continue
@@ -115,6 +116,8 @@ class Tracker:
                 error_codes.append(passcode)
                 continue
             if await self.conn.query(passcode) is None:
+                if status_message is None:
+                    status_message = await msg.reply('Sending passcode (interval: 2s)')
                 _msg = await client.send_message(self.channel_id, f'<code>{passcode}</code>', 'html')
                 count += 1
                 await asyncio.gather(self.conn.insert(passcode, _msg.message_id),
@@ -124,7 +127,11 @@ class Tracker:
                 duplicate_codes.append(passcode)
         error_msg = self.parse_codes(error_codes, 'Error')
         duplicate_msg = self.parse_codes(duplicate_codes, 'Duplicate')
-        await msg.reply(f'{error_msg}\n{duplicate_msg}\nSuccess send: {count} passcode(s)')
+        if status_message is None:
+            edit_func = msg.reply
+        else:
+            edit_func = status_message.edit
+        await edit_func(f'{error_msg}\n{duplicate_msg}\nSuccess send: {count} passcode(s)')
 
     async def handle_callback_query(self, client: Client, msg: CallbackQuery) -> None:
         args = msg.data.split()
