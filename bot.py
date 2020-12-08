@@ -143,12 +143,16 @@ class Tracker:
             _arg, sub_arg, user_id = args
             user_id = int(user_id)
             if sub_arg == 'grant':
-                await self.insert_authorized_user(user_id)
+                answer_msg = None
+                if await self.query_authorized_user(user_id):
+                    answer_msg = 'Already granted'
+                else:
+                    await self.insert_authorized_user(user_id)
                 await asyncio.gather(msg.message.edit_reply_markup(
                     InlineKeyboardMarkup([[
                         InlineKeyboardButton('Revoke', f'account revoke {user_id}')
                     ]])
-                ), msg.answer(), client.send_message(user_id, 'Access granted'))
+                ), msg.answer(answer_msg), client.send_message(user_id, 'Access granted'))
             elif sub_arg == 'deny':
                 if await self.query_authorized_user(user_id):
                     await asyncio.gather(msg.message.edit_reply_markup(), msg.answer('Out of dated'))
