@@ -36,7 +36,7 @@ from libsqlite import PasscodeTracker
 
 logger = logging.getLogger('code_poster')
 
-PASSCODE_EXP = re.compile(r'^\w{5,25}$')
+PASSCODE_EXP = re.compile(r'^\w{5,35}$')
 
 
 class Tracker:
@@ -112,7 +112,7 @@ class Tracker:
         for passcode in msg.text.splitlines(False):
             if passcode == '' or passcode.startswith('#'):
                 continue
-            if len(passcode) > 25 or PASSCODE_EXP.match(passcode) is None:
+            if len(passcode) > 35 or PASSCODE_EXP.match(passcode) is None:
                 error_codes.append(passcode)
                 continue
             if await self.conn.query(passcode) is None:

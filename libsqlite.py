@@ -106,7 +106,7 @@ class PasscodeTracker(SqliteBase):
 
     async def query(self, code: str) -> Optional[CodeStatus]:
         async with self.lock, aiosqlite.connect(self.file_name) as db:
-            async with db.execute('''SELECT * FROM "code" WHERE "str" = ?''', (code,)) as cursor:
+            async with db.execute('''SELECT * FROM "code" WHERE "str" = ?''', (code.lower(),)) as cursor:
                 r = await cursor.fetchone()
                 if r is None:
                     return None
@@ -114,25 +114,26 @@ class PasscodeTracker(SqliteBase):
 
     async def update(self, code: str, fr: bool) -> None:
         async with self.lock, aiosqlite.connect(self.file_name) as db:
-            async with db.execute('''UPDATE "code" SET "fr" = ? WHERE "str" = ?''', (int(fr), code)):
+            async with db.execute('''UPDATE "code" SET "fr" = ? WHERE "str" = ?''', (int(fr), code.lower())):
                 pass
             await db.commit()
 
     async def insert(self, code: str, message_id: int) -> None:
         async with self.lock, aiosqlite.connect(self.file_name) as db:
-            async with db.execute('''INSERT INTO "code" VALUES (?, ?, 0)''', (code, message_id)):
+            async with db.execute('''INSERT INTO "code" VALUES (?, ?, 0)''', (code.lower(), message_id)):
                 pass
             await db.commit()
 
     async def insert_history(self, s: str, sender: int) -> None:
         async with self.lock, aiosqlite.connect(self.file_name) as db:
-            async with db.execute('''INSERT INTO "history" VALUES (?, ?)''', (s, sender)):
+            async with db.execute('''INSERT INTO "history" VALUES (?, ?)''', (s.lower(), sender)):
                 pass
             await db.commit()
 
     async def query_history(self, s: str) -> Optional[Tuple[str, int]]:
         async with self.lock, aiosqlite.connect(self.file_name) as db:
-            async with db.execute('''SELECT "send_by" FROM "history" WHERE "str" LIKE ?''', (f'{s}%',)) as cursor:
+            async with db.execute('''SELECT "send_by" FROM "history" WHERE "str" LIKE ?''',
+                                  (f'{s.lower()}%',)) as cursor:
                 r = await cursor.fetchone()
                 if r is None:
                     return None
