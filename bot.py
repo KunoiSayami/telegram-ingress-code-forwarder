@@ -72,6 +72,13 @@ class Tracker:
                              self.redis.wait_closed())
 
     @classmethod
+    async def read_from_config(cls, config: ConfigParser, debug: bool = False):
+        return await cls.new(config.getint('telegram', 'api_id'), config.get('telegram', 'api_hash'),
+                             config.get('telegram', 'bot_token'), 'codes.db', config.getint('telegram', 'channel'),
+                             config.get('telegram', 'password'), config.get('telegram', 'owners', fallback='[]'),
+                             debug_mode=debug)
+
+    @classmethod
     async def new(cls, api_id: int, api_hash: str, bot_token: str, file_name: str, channel_id: int,
                   password: str, owners: str, *, debug_mode: bool = False) -> 'Tracker':
         self = cls(api_id, api_hash, bot_token, await PasscodeTracker.new(file_name, renew=debug_mode),
@@ -91,13 +98,20 @@ class Tracker:
         if result is None:
             _msg = await client.send_message(self.channel_id, f'<code>{msg.text}</code>', 'html')
             await asyncio.gather(self.conn.insert(msg.text, _msg.message_id),
-                                 self.conn.insert_history(msg.text, msg.chat.id))
+                                 self.conn.insert_history(msg.text, msg.chat.id),
+                                 self.inject_send_passcode(msg.text))
             await msg.reply('Send successful')
         else:
             await msg.reply(f"Passcode exist, {'mark passcode' if not result.FR else 'undo mark'} as FR?",
                             reply_markup=InlineKeyboardMarkup([[
                                 InlineKeyboardButton(
                                     "Process", f"{'u' if result.FR else 'm'} {msg.text} {result.message_id}")]]))
+
+    async def inject_send_passcode(self, passcode: str) -> None:
+        pass
+
+    async def mark_full_redeemed_passcode(self, passcode: str, is_fr: bool = False) -> None:
+        pass
 
     @staticmethod
     def parse_codes(passcodes: List[str], header: str) -> str:
@@ -122,7 +136,8 @@ class Tracker:
                 count += 1
                 await asyncio.gather(self.conn.insert(passcode, _msg.message_id),
                                      self.conn.insert_history(passcode, msg.chat.id),
-                                     asyncio.sleep(2))
+                                     asyncio.sleep(2),
+                                     self.inject_send_passcode(passcode))
             else:
                 duplicate_codes.append(passcode)
         error_msg = self.parse_codes(error_codes, 'Error')
@@ -170,6 +185,7 @@ class Tracker:
         await asyncio.gather(
             client.edit_message_text(self.channel_id, int(args[2]), _msg_text, 'html'),
             self.conn.update(args[1], args[0] == 'm'),
+            self.mark_full_redeemed_passcode(args[1], args[0] == 'm'),
             msg.edit_message_reply_markup(),
             msg.answer(),
         )
@@ -260,10 +276,7 @@ class Tracker:
 async def main(debug: bool = False):
     config = ConfigParser()
     config.read('config.ini')
-    bot = await Tracker.new(config.getint('telegram', 'api_id'), config.get('telegram', 'api_hash'),
-                            config.get('telegram', 'bot_token'), 'codes.db', config.getint('telegram', 'channel'),
-                            config.get('telegram', 'password'), config.get('telegram', 'owners', fallback='[]'),
-                            debug_mode=debug)
+    bot = await Tracker.read_from_config(config, debug)
     await bot.start()
     await bot.idle()
     await bot.stop()

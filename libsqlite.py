@@ -72,7 +72,8 @@ class SqliteBase(metaclass=ABCMeta):
         self.lock = asyncio.Lock()
 
     @classmethod
-    async def _new(cls, file_name: str, drop_statement: str, create_statement: str, *, main_table_name: str, renew: bool = False) -> 'SqliteBase':
+    async def _new(cls, file_name: str, drop_statement: str, create_statement: str, *,
+                   main_table_name: str, renew: bool = False) -> 'SqliteBase':
         if renew:
             try:
                 os.remove(file_name)
