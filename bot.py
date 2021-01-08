@@ -151,6 +151,8 @@ class Tracker:
     async def handle_callback_query(self, client: Client, msg: CallbackQuery) -> None:
         args = msg.data.split()
         if len(args) != 3:
+            if args[0] == 'ignore':
+                await asyncio.gather(msg.edit_message_reply_markup(), msg.answer())
             return
 
         # Account process
@@ -202,10 +204,12 @@ class Tracker:
                 owner,
                 f"User [{msg.chat.id}](tg://user?id={msg.chat.id}) request to grant talk power",
                 'markdown',
-                reply_markup=InlineKeyboardMarkup([[
-                    InlineKeyboardButton('Agree', f'account grant {msg.chat.id}'),
-                    InlineKeyboardButton('Deny', f'account deny {msg.chat.id}')]]))
-                                   for owner in self.owners])
+                reply_markup=InlineKeyboardMarkup(
+                    [
+                        [InlineKeyboardButton('Agree', f'account grant {msg.chat.id}'),
+                         InlineKeyboardButton('Deny', f'account deny {msg.chat.id}')],
+                        [InlineKeyboardButton('Ignore', 'ignore')]
+                    ])) for owner in self.owners])
         elif len(msg.command) == 2 and msg.command[1] == self.password:
             await self.insert_authorized_user(msg.chat.id)
             if len(self.owners):
