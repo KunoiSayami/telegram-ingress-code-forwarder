@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # bot.py
-# Copyright (C) 2020 KunoiSayami
+# Copyright (C) 2020-2021 KunoiSayami
 #
 # This module is part of telegram-ingress-code-forwarder and is released under
 # the AGPL v3 License: https://www.gnu.org/licenses/agpl-3.0.txt
@@ -99,7 +99,7 @@ class Tracker:
             _msg = await client.send_message(self.channel_id, f'<code>{msg.text}</code>', 'html')
             await asyncio.gather(self.conn.insert(msg.text, _msg.message_id),
                                  self.conn.insert_history(msg.text, msg.chat.id),
-                                 self.inject_send_passcode(msg.text))
+                                 self.hook_send_passcode(msg.text))
             await msg.reply('Send successful')
         else:
             await msg.reply(f"Passcode exist, {'mark passcode' if not result.FR else 'undo mark'} as FR?",
@@ -107,10 +107,10 @@ class Tracker:
                                 InlineKeyboardButton(
                                     "Process", f"{'u' if result.FR else 'm'} {msg.text} {result.message_id}")]]))
 
-    async def inject_send_passcode(self, passcode: str) -> None:
+    async def hook_send_passcode(self, passcode: str) -> None:
         pass
 
-    async def mark_full_redeemed_passcode(self, passcode: str, is_fr: bool = False) -> None:
+    async def hook_mark_full_redeemed_passcode(self, passcode: str, is_fr: bool = False) -> None:
         pass
 
     @staticmethod
@@ -137,7 +137,7 @@ class Tracker:
                 await asyncio.gather(self.conn.insert(passcode, _msg.message_id),
                                      self.conn.insert_history(passcode, msg.chat.id),
                                      asyncio.sleep(2),
-                                     self.inject_send_passcode(passcode))
+                                     self.hook_send_passcode(passcode))
             else:
                 duplicate_codes.append(passcode)
         error_msg = self.parse_codes(error_codes, 'Error')
@@ -187,7 +187,7 @@ class Tracker:
         await asyncio.gather(
             client.edit_message_text(self.channel_id, int(args[2]), _msg_text, 'html'),
             self.conn.update(args[1], args[0] == 'm'),
-            self.mark_full_redeemed_passcode(args[1], args[0] == 'm'),
+            self.hook_mark_full_redeemed_passcode(args[1], args[0] == 'm'),
             msg.edit_message_reply_markup(),
             msg.answer(),
         )
