@@ -32,7 +32,13 @@ from pyrogram import Client, filters
 from pyrogram.handlers import CallbackQueryHandler, MessageHandler
 from pyrogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from libsqlite import PasscodeTracker
+try:
+    from libsqlite import PasscodeTracker
+except ImportError as e:
+    try:
+        from forwarder.libsqlite import PasscodeTracker
+    except ImportError:
+        raise e
 
 logger = logging.getLogger('code_poster')
 
