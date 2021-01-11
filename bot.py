@@ -72,9 +72,9 @@ class Tracker:
                              self.redis.wait_closed())
 
     @classmethod
-    async def load_from_config(cls, config: ConfigParser, debug: bool = False):
+    async def load_from_config(cls, config: ConfigParser, *, debug: bool = False, database_file: str = 'codes.db'):
         return await cls.new(config.getint('telegram', 'api_id'), config.get('telegram', 'api_hash'),
-                             config.get('telegram', 'bot_token'), 'codes.db', config.getint('telegram', 'channel'),
+                             config.get('telegram', 'bot_token'), database_file, config.getint('telegram', 'channel'),
                              config.get('telegram', 'password'), config.get('telegram', 'owners', fallback='[]'),
                              debug_mode=debug)
 
@@ -280,7 +280,7 @@ class Tracker:
 async def main(debug: bool = False):
     config = ConfigParser()
     config.read('config.ini')
-    bot = await Tracker.load_from_config(config, debug)
+    bot = await Tracker.load_from_config(config, debug=debug)
     await bot.start()
     await bot.idle()
     await bot.stop()
