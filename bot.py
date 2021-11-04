@@ -73,9 +73,8 @@ class Tracker:
         await pyrogram.idle()
 
     async def stop(self) -> None:
-        self.redis.close()
         await asyncio.gather(self.app.stop(),
-                             self.redis.wait_closed())
+                             self.redis.close())
 
     @classmethod
     async def load_from_config(cls, config: ConfigParser, *, debug: bool = False, database_file: str = 'codes.db'):
@@ -88,7 +87,7 @@ class Tracker:
     async def new(cls, api_id: int, api_hash: str, bot_token: str, file_name: str, channel_id: int,
                   password: str, owners: str, *, debug_mode: bool = False) -> 'Tracker':
         self = cls(api_id, api_hash, bot_token, await PasscodeTracker.new(file_name, renew=debug_mode),
-                   channel_id, password, owners, await aioredis.create_redis_pool('redis://localhost'))
+                   channel_id, password, owners, await aioredis.from_url('redis://localhost'))
         return self
 
     async def handle_passcode(self, client: Client, msg: Message) -> None:
@@ -243,7 +242,7 @@ class Tracker:
 
     async def flood_check(self, user_id: int, timeout: int = 120) -> bool:
         if await self.redis.get(f'flood_{user_id}') is None:
-            await self.redis.set(f'flood_{user_id}', '1', expire=timeout)
+            await self.redis.set(f'flood_{user_id}', '1', ex=timeout)
             return False
         return True
 
