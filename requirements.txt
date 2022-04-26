@@ -1,4 +1,4 @@
 aioredis~=2.0.0
-Pyrogram~=1.2.9
+Pyrogram~=2.0.13
 coloredlogs~=15.0.1
 aiosqlite~=0.17.0

@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # bot.py
-# Copyright (C) 2020-2021 KunoiSayami
-#
-# This module is part of telegram-ingress-code-forwarder and is released under
-# the AGPL v3 License: https://www.gnu.org/licenses/agpl-3.0.txt
+# Copyright (C) 2020-2022 KunoiSayami
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -18,6 +15,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
 import ast
 import asyncio
 import logging
@@ -29,6 +27,7 @@ from typing import List
 import aioredis
 import pyrogram
 from pyrogram import Client, filters
+from pyrogram.enums import ParseMode
 from pyrogram.handlers import CallbackQueryHandler, MessageHandler
 from pyrogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
@@ -101,8 +100,8 @@ class Tracker:
             return
         result = await self.conn.query(msg.text)
         if result is None:
-            _msg = await client.send_message(self.channel_id, f'<code>{msg.text}</code>', 'html')
-            await asyncio.gather(self.conn.insert(msg.text, _msg.message_id),
+            _msg = await client.send_message(self.channel_id, f'<code>{msg.text}</code>', ParseMode.HTML)
+            await asyncio.gather(self.conn.insert(msg.text, _msg.id),
                                  self.conn.insert_history(msg.text, msg.chat.id),
                                  self.hook_send_passcode(msg.text))
             await msg.reply('Send successful')
@@ -137,9 +136,9 @@ class Tracker:
             if await self.conn.query(passcode) is None:
                 if status_message is None:
                     status_message = await msg.reply('Sending passcode (interval: 2s)')
-                _msg = await client.send_message(self.channel_id, f'<code>{passcode}</code>', 'html')
+                _msg = await client.send_message(self.channel_id, f'<code>{passcode}</code>', ParseMode.HTML)
                 count += 1
-                await asyncio.gather(self.conn.insert(passcode, _msg.message_id),
+                await asyncio.gather(self.conn.insert(passcode, _msg.id),
                                      self.conn.insert_history(passcode, msg.chat.id),
                                      asyncio.sleep(2),
                                      self.hook_send_passcode(passcode))
@@ -190,7 +189,7 @@ class Tracker:
 
         _msg_text = f'<del>{args[1]}</del>' if args[0] == 'm' else f'<code>{args[1]}</code>'
         await asyncio.gather(
-            client.edit_message_text(self.channel_id, int(args[2]), _msg_text, 'html'),
+            client.edit_message_text(self.channel_id, int(args[2]), _msg_text, ParseMode.HTML),
             self.conn.update(args[1], args[0] == 'm'),
             self.hook_mark_full_redeemed_passcode(args[1], args[0] == 'm'),
             msg.edit_message_reply_markup(),
@@ -208,7 +207,7 @@ class Tracker:
             await asyncio.gather(*[client.send_message(
                 owner,
                 f"User [{msg.chat.id}](tg://user?id={msg.chat.id}) request to grant talk power",
-                'markdown',
+                ParseMode.MARKDOWN,
                 reply_markup=InlineKeyboardMarkup(
                     [
                         [InlineKeyboardButton('Agree', f'account grant {msg.chat.id}'),
@@ -299,6 +298,4 @@ if __name__ == '__main__':
     except ModuleNotFoundError:
         logging.basicConfig(level=logging.DEBUG,
                             format='%(asctime)s - %(levelname)s - %(funcName)s - %(lineno)d - %(message)s')
-    logging.getLogger('pyrogram').setLevel(logging.WARNING)
-    logging.getLogger('aiosqlite').setLevel(logging.WARNING)
-    asyncio.get_event_loop().run_until_complete(main('--debug' in sys.argv))
+    asyncio.run(main('--debug' in sys.argv))
